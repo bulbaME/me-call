@@ -1,13 +1,14 @@
 # some node modules
-/node_modules
-/heroku
+node_modules
+heroku
 
 # ignore everything
-/public/*
+public
+sounds
 # except few files
-!/public/images
-!/public/index.js
-!/public/index.css
-!/public/index.html
+!public/images
+!public/index.js
+!public/index.css
+!public/index.html
 
 !.gitignore
