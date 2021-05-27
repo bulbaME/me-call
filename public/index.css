@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap');
+
+body {
+    background-color: #3a3b3d;
+}
+
+#main {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+textarea {
+    transition: 200ms;
+    background-color: #3a3c3d;
+    border: 1pt solid #1a1a1a;
+    align-content: center;
+    resize: none;
+    outline: none;
+    color: #99a0a3;
+    font-size: xx-large;
+    text-align: center;
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+    padding-right: 30pt;
+    padding-left: 30pt;
+    width: 70pt;
+    border-radius: 15pt;
+    display: block;
+    margin-top: 20pt;
+    line-height: 2rem;
+}
+
+textarea:focus {
+    box-shadow: 1pt 3pt 3pt rgb(24, 23, 23);
+}
+
+::placeholder {
+    color: #7f8588;
+    font-size: 50%;
+    line-height: 250%;
+}
+
+img {
+    cursor: pointer;
+    display: block;
+}
+
+#text {
+    text-align: center;
+    position: fixed;
+    width: 100%;
+    top: 15%;
+    font-family: 'Roboto Mono', monospace;
+    display: block;
+    color: #a7a7a7;
+    font-size: 2rem;
+    user-select: none;
+    cursor: pointer;
+}
+
+#outerCall {
+    transition: 200ms;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 50pt;
+    border: 0pt;
+    margin-top: 20pt;
+    width: 90pt;
+}
+
+#outerCall:hover {
+    background-color: #596062; 
+}
+
+#call {
+    transition: 200ms;
+    height: 50pt;
+    width: 50pt;
+    padding: 20pt;
+}
+
+.callUp {
+    transform: rotate(0deg);
+    filter: grayscale(100%);
+}
+
+.callDown {
+    transform: rotate(135deg);
+    filter: grayscale(100%);
+}
+
+.callUp:hover {
+    filter: hue-rotate(0deg) grayscale(0%);
+}
+
+.callDown:hover {
+    filter: hue-rotate(-120deg) grayscale(0%) saturate(350%);
+}
