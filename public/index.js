@@ -1,30 +1,27 @@
 const io = require('socket.io-client');
 const EventEmitter = require('events');
-let socket;
 
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+let socket;
+let audioContext;
 
 // create gain node
 // const volumeNode = audioContext.createGain();
 // volumeNode.gain.value = 0.03;
 
-class FloatAudioBuffer {
-    constructor(sampleRate, size) {
+class Float32AudioBuffer {
+    constructor(sampleRate, size, reset) {
         this.sampleRate = sampleRate;
         this.size = size;
         this.bufferSize = 0;
 
         this.buffer = new Float32Array(size);
+        this.resetFunc = reset;
     }
 
     // send when overflows
     reset() {
         this.bufferSize = 0;
-        if(!muted) send({
-            buffer: this.buffer,
-            sample: this.size,
-            sampleRate: this.sampleRate
-        });
+        this.resetFunc();
     }
 
     append(buffer) {
@@ -48,6 +45,8 @@ const play = ({ buffer, sample, sampleRate }) => {
     const audioBuffer = audioContext.createBuffer(1, sample, sampleRate);
     audioBuffer.copyToChannel((new Float32Array(buffer)), 0, 1);
 
+    console.log(buffer)
+
     const audioSource = audioContext.createBufferSource();
     audioSource.buffer = audioBuffer;
 
@@ -63,7 +62,6 @@ const callEnded = () => {
         socket.close();
         setState('call ended 😪');
     }
-    socket = null;
 
     stopAudioStreamEvent.emit('stop');
     buttonDecline();
@@ -91,6 +89,7 @@ $(document).ready(() => {
     // proceed call button
     $('#outerCall').click(() => {
         if (!socket) {
+            audioContext = new AudioContext();
             const myNumber = +$('#myNumber').val();
             const number = +$('#number').val();
 
@@ -121,20 +120,42 @@ $(document).ready(() => {
                     // create audio stream from microphone
                     window.navigator.mediaDevices.getUserMedia({ audio: true })
                     .then((audioMediaStream) => {
-                        const floatAudioBuffer = new FloatAudioBuffer(audioContext.sampleRate, audioContext.sampleRate / 2);
-                        const audioTrack = audioMediaStream.getAudioTracks()[0];
+                        const floatAudioBuffer = new Float32AudioBuffer(audioContext.sampleRate, audioContext.sampleRate / 2, 
+                            function() {
+                                if(!muted) send({
+                                buffer: this.buffer,
+                                sample: this.size,
+                                sampleRate: this.sampleRate
+                            });
+                        });
 
+                        const audioTrack = audioMediaStream.getAudioTracks()[0];
                         const audio = (new MediaStreamTrackProcessor({ track: audioTrack })).readable;  
                         const audioStream = new WritableStream({ write(chunk) { floatAudioBuffer.append(chunk.buffer.getChannelData(0)); }});
                         audio.pipeTo(audioStream);
+                        stopAudioStreamEvent.on('stop', () => audioTrack.stop());
 
+                        // const merger = audioContext.createChannelMerger(2);
+
+                        // const sourceNode = audioContext.createMediaStreamSource(audioMediaStream);
                         // const analyser = audioContext.createAnalyser();
                         // analyser.fftSize = 2048;
                         // const buffer = new Float32Array(analyser.frequencyBinCount);
 
-                        // console.log(analyser.getFloatFrequencyData());
+                        // sourceNode.connect(merger);
+                        // merger.connect(analyser);
 
-                        stopAudioStreamEvent.on('stop', () => audioTrack.stop());
+                        // const getData = () => {
+                        //     analyser.getFloatFrequencyData(buffer)``
+                        //     //floatAudioBuffer.append(buffer);
+                        //     play({ buffer, sample: analyser.frequencyBinCount, sampleRate: audioContext.sampleRate });
+
+                        //     setTimeout(getData, analyser.frequencyBinCount / audioContext.sampleRate);
+                        // }
+
+                        // getData();
+
+                        // stopAudioStreamEvent.on('stop', () => sourceNode.disconnect());
                     })
                     .catch(err => console.error(err.message));
 
