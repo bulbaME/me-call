@@ -1,5 +1,4 @@
 const io = require('socket.io-client');
-const EventEmitter = require('events');
 
 let socket;
 let audioContext;
@@ -25,8 +24,6 @@ const play = ({ buffer, sample, sampleRate }) => {
     audioSource.connect(audioContext.destination);
     audioSource.start(0);
 }
-
-const stopAudioStreamEvent = new EventEmitter();
  
 // on call end
 const callEnded = () => {
@@ -92,18 +89,24 @@ $(document).ready(() => {
                     // create audio stream from microphone
                     window.navigator.mediaDevices.getUserMedia({ audio: true })
                     .then((audioMediaStream) => {
-                        const floatAudioBuffer = new Float32AudioBuffer(audioContext.sampleRate, audioContext.sampleRate / 2, 
-                            function() {
-                                if(!muted) send({
-                                buffer: this.buffer,
-                                sample: this.size,
-                                sampleRate: this.sampleRate
-                            });
-                        });
+                        let bufferSize = audioContext.sampleRate / 2;
 
                         audioContext.audioWorklet.addModule('worklet-processor.js').then(() => {
                             const node = new AudioWorkletNode(audioContext, 'worklet-processor');
-                            node.port.onmessage = (event) => send(event.data);
+                            node.port.onmessage = (event) => {
+                                if(!muted) send({
+                                    buffer: event.data,
+                                    sample: bufferSize,
+                                    sampleRate: audioContext.sampleRate
+                                });
+                            }
+
+                            let ctxData = node.parameters.get('ctxData');
+                            ctxData.setValueAtTime({ 
+                                sampleRate: audioContext.sampleRate,
+                                size: bufferSize,
+                                init: true 
+                            });
                         });
 
                         // const audioTrack = audioMediaStream.getAudioTracks()[0];
@@ -123,8 +126,8 @@ $(document).ready(() => {
                         // merger.connect(analyser);
 
                         // const getData = () => {
-                        //     analyser.getFloatFrequencyData(buffer)``
-                        //     //floatAudioBuffer.append(buffer);
+                        //     analyser.getFloatFrequencyData(buffer);
+                        //     floatAudioBuffer.append(buffer);
                         //     play({ buffer, sample: analyser.frequencyBinCount, sampleRate: audioContext.sampleRate });
 
                         //     setTimeout(getData, analyser.frequencyBinCount / audioContext.sampleRate);

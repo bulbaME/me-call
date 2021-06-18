@@ -11,7 +11,7 @@ class Float32AudioBuffer {
     // send when overflows
     reset() {
         this.bufferSize = 0;
-        this.resetFunc();
+        this.resetFunc(this);
     }
 
     append(buffer) {
@@ -25,19 +25,36 @@ class Float32AudioBuffer {
 }
 
 class Processor extends AudioWorkletProcessor {
+    static get parameterDescriptors() { return[ 
+        {
+            name: 'ctxData',
+            defaultValue: { init: false }
+        }
+    ];}
+
     constructor() {
         super();
 
-        this.ctx = this.context;
-        this.bufferClass = new Float32AudioBuffer();
+        this.bufferClass = false;
         this.run = true;
+
+        this.port.onmessage = (event) => {
+            if (event.data === 'end') this.run = false;
+        }
     }
 
-    process(input, output, params) {
+    process(input, output, parameters) {
+        if (!this.bufferClass) {
+            if (parameters.ctxData.init) this.bufferClass = new Float32AudioBuffer(parameters.ctxData.sampleRate, parameters.ctxData.size, (that) => {
+                this.port.postMessage(that.buffer)
+            });
+            else return true;
+        }
+
         const buffer = input[0];
+        this.bufferClass.append(buffer);
 
-
-        return this.run
+        return this.run;
     }
 }
 
