@@ -8,32 +8,6 @@ let audioContext;
 // const volumeNode = audioContext.createGain();
 // volumeNode.gain.value = 0.03;
 
-class Float32AudioBuffer {
-    constructor(sampleRate, size, reset) {
-        this.sampleRate = sampleRate;
-        this.size = size;
-        this.bufferSize = 0;
-
-        this.buffer = new Float32Array(size);
-        this.resetFunc = reset;
-    }
-
-    // send when overflows
-    reset() {
-        this.bufferSize = 0;
-        this.resetFunc();
-    }
-
-    append(buffer) {
-        for(let c = 0; c < buffer.length; c++) {
-            if(this.bufferSize >= this.size) this.reset();
-
-            this.buffer[this.bufferSize] = buffer[c];
-            this.bufferSize++;
-        }
-    }
-}
-
 // send encoded audio data
 const send = (chunkData) => socket.emit('data', chunkData);
 
@@ -44,8 +18,6 @@ let currentState = $('#text').text();
 const play = ({ buffer, sample, sampleRate }) => {
     const audioBuffer = audioContext.createBuffer(1, sample, sampleRate);
     audioBuffer.copyToChannel((new Float32Array(buffer)), 0, 1);
-
-    console.log(buffer)
 
     const audioSource = audioContext.createBufferSource();
     audioSource.buffer = audioBuffer;
@@ -129,11 +101,16 @@ $(document).ready(() => {
                             });
                         });
 
-                        const audioTrack = audioMediaStream.getAudioTracks()[0];
-                        const audio = (new MediaStreamTrackProcessor({ track: audioTrack })).readable;  
-                        const audioStream = new WritableStream({ write(chunk) { floatAudioBuffer.append(chunk.buffer.getChannelData(0)); }});
-                        audio.pipeTo(audioStream);
-                        stopAudioStreamEvent.on('stop', () => audioTrack.stop());
+                        audioContext.audioWorklet.addModule('worklet-processor.js').then(() => {
+                            const node = new AudioWorkletNode(audioContext, 'worklet-processor');
+                            node.port.onmessage = (event) => send(event.data);
+                        });
+
+                        // const audioTrack = audioMediaStream.getAudioTracks()[0];
+                        // const audio = (new MediaStreamTrackProcessor({ track: audioTrack })).readable; 
+                        // const audioStream = new WritableStream({ write(chunk) { floatAudioBuffer.append(chunk.buffer.getChannelData(0)); }});
+                        // audio.pipeTo(audioStream);
+                        // stopAudioStreamEvent.on('stop', () => audioTrack.stop());
 
                         // const merger = audioContext.createChannelMerger(2);
 
