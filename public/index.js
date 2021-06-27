@@ -1,4 +1,5 @@
 const io = require('socket.io-client');
+const EventEmitter = require('events');
 
 let socket;
 let audioContext;
@@ -8,10 +9,14 @@ let audioContext;
 // volumeNode.gain.value = 0.03;
 
 // send encoded audio data
-const send = (chunkData) => socket.emit('data', chunkData);
+const send = (chunkData) => {
+    console.log(chunkData);
+    socket.emit('data', chunkData);
+}
 
 let muted = false;
 let currentState = $('#text').text();
+const stopAudioStreamEvent = new EventEmitter();
 
 // play decoded audio data
 const play = ({ buffer, sample, sampleRate }) => {
@@ -56,7 +61,7 @@ $(document).ready(() => {
     });
 
     // proceed call button
-    $('#outerCall').click(() => {
+    $('#outerCall').on('mouseup touchend', () => {
         if (!socket) {
             audioContext = new AudioContext();
             const myNumber = +$('#myNumber').val();
@@ -88,26 +93,24 @@ $(document).ready(() => {
 
                     // create audio stream from microphone
                     window.navigator.mediaDevices.getUserMedia({ audio: true })
-                    .then((audioMediaStream) => {
-                        let bufferSize = audioContext.sampleRate / 2;
-
-                        audioContext.audioWorklet.addModule('worklet-processor.js').then(() => {
-                            const node = new AudioWorkletNode(audioContext, 'worklet-processor');
-                            node.port.onmessage = (event) => {
-                                if(!muted) send({
-                                    buffer: event.data,
-                                    sample: bufferSize,
-                                    sampleRate: audioContext.sampleRate
-                                });
-                            }
-
-                            let ctxData = node.parameters.get('ctxData');
-                            ctxData.setValueAtTime({ 
-                                sampleRate: audioContext.sampleRate,
-                                size: bufferSize,
-                                init: true 
+                    .then(async (audioMediaStream) => {
+                        const bufferSize = audioContext.sampleRate / 2;
+                        await audioContext.audioWorklet.addModule('worklet-processor.js');
+                        const workletNode = new AudioWorkletNode(audioContext, 'processor');
+                        workletNode.port.onmessage = (event) => {
+                            if(!muted) send({
+                                buffer: event.data,
+                                sample: bufferSize,
+                                sampleRate: audioContext.sampleRate
                             });
-                        });
+                        }
+
+                        workletNode.parameters.get('sampleRate').setValueAtTime(audioContext.sampleRate, audioContext.currentTime);
+                        workletNode.parameters.get('size').setValueAtTime(bufferSize, audioContext.currentTime);
+                        workletNode.parameters.get('init').setValueAtTime(true, audioContext.currentTime);
+
+                        const sourceNode = audioContext.createMediaStreamSource(audioMediaStream);
+                        sourceNode.connect(workletNode);
 
                         // const audioTrack = audioMediaStream.getAudioTracks()[0];
                         // const audio = (new MediaStreamTrackProcessor({ track: audioTrack })).readable; 
@@ -135,7 +138,11 @@ $(document).ready(() => {
 
                         // getData();
 
-                        // stopAudioStreamEvent.on('stop', () => sourceNode.disconnect());
+                        stopAudioStreamEvent.on('stop', () => {
+                            sourceNode.disconnect();
+                            workletNode.port.postMessage('end');
+                            audioMediaStream.getAudioTracks()[0].stop();
+                        });
                     })
                     .catch(err => console.error(err.message));
 

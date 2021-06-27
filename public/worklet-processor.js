@@ -1,21 +1,20 @@
 class Float32AudioBuffer {
     constructor(sampleRate, size, reset) {
-        this.sampleRate = sampleRate;
-        this.size = size;
+        this.sampleRate = sampleRate[0];
+        this.size = size[0];
         this.bufferSize = 0;
 
-        this.buffer = new Float32Array(size);
+        this.buffer = new Float32Array(this.size);
         this.resetFunc = reset;
     }
 
-    // send when overflows
     reset() {
         this.bufferSize = 0;
         this.resetFunc(this);
     }
 
     append(buffer) {
-        for(let c = 0; c < buffer.length; c++) {
+        for(let c = 0; c < (buffer ? buffer.length:0); c++) {
             if(this.bufferSize >= this.size) this.reset();
 
             this.buffer[this.bufferSize] = buffer[c];
@@ -25,10 +24,18 @@ class Float32AudioBuffer {
 }
 
 class Processor extends AudioWorkletProcessor {
-    static get parameterDescriptors() { return[ 
+    static get parameterDescriptors() { return [ 
         {
-            name: 'ctxData',
-            defaultValue: { init: false }
+            name: 'init',
+            defaultValue: false
+        },
+        {
+            name: 'sampleRate',
+            defaultValue: 1
+        },
+        {
+            name: 'size',
+            defaultValue: 1
         }
     ];}
 
@@ -45,17 +52,16 @@ class Processor extends AudioWorkletProcessor {
 
     process(input, output, parameters) {
         if (!this.bufferClass) {
-            if (parameters.ctxData.init) this.bufferClass = new Float32AudioBuffer(parameters.ctxData.sampleRate, parameters.ctxData.size, (that) => {
-                this.port.postMessage(that.buffer)
+            if (parameters.init) this.bufferClass = new Float32AudioBuffer(parameters.sampleRate, parameters.size, (that) => {
+                this.port.postMessage(that.buffer);
             });
             else return true;
         }
 
-        const buffer = input[0];
+        const buffer = input[0][0];
         this.bufferClass.append(buffer);
-
         return this.run;
     }
 }
 
-registerProcessor('worklet-processor', Processor)
+registerProcessor('processor', Processor);

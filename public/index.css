@@ -1,5 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap');
 
+@media (min-aspect-ratio: 1/4) {
+    :root {
+        --v: 1.5;
+        --at: 0%;
+    }
+}
+
+@media (min-aspect-ratio: 1/1) {
+    :root {
+        --v: 1;
+        --at: 15%;
+    }
+}
+
 body {
     background-color: #3a3b3d;
 }
@@ -21,15 +35,16 @@ textarea {
     color: #99a0a3;
     font-size: xx-large;
     text-align: center;
-    padding-top: 0.8rem;
-    padding-bottom: 0.8rem;
-    padding-right: 30pt;
-    padding-left: 30pt;
-    width: 70pt;
-    border-radius: 15pt;
+    padding-top: calc(var(--v) * 0.8rem);
+    padding-bottom: calc(var(--v) * 0.8rem);
+    padding-right: calc(var(--v) * 30pt);
+    padding-left: calc(var(--v) * 30pt);
+    width: calc(var(--v) * 100pt);
+    height: calc(var(--v) * 24pt);
+    border-radius: calc(var(--v) * 15pt);
     display: block;
-    margin-top: 20pt;
-    line-height: 2rem;
+    margin-top: calc(var(--v) * 20pt);
+    line-height: calc(var(--v) * 2rem);
 }
 
 textarea:focus {
@@ -51,11 +66,11 @@ img {
     text-align: center;
     position: fixed;
     width: 100%;
-    top: 15%;
+    top: var(--at);
     font-family: 'Roboto Mono', monospace;
     display: block;
     color: #a7a7a7;
-    font-size: 2rem;
+    font-size: calc(var(--v) * 2rem);
     user-select: none;
     cursor: pointer;
 }
@@ -65,10 +80,10 @@ img {
     display: block;
     margin-left: auto;
     margin-right: auto;
-    border-radius: 50pt;
+    border-radius: calc(var(--v) * 50pt);
     border: 0pt;
-    margin-top: 20pt;
-    width: 90pt;
+    margin-top: calc(var(--v) * 20pt);
+    width: calc(var(--v) * 90pt);
 }
 
 #outerCall:hover {
@@ -77,9 +92,9 @@ img {
 
 #call {
     transition: 200ms;
-    height: 50pt;
-    width: 50pt;
-    padding: 20pt;
+    height: calc(var(--v) * 50pt);
+    width: calc(var(--v) * 50pt);
+    padding: calc(var(--v) * 20pt);
 }
 
 .callUp {
